@@ -1,0 +1,2912 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="形採点">
+<title>空手・形 採点アプリ Ver3.0 PWA Navy</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#1E3A5F">
+<link rel="apple-touch-icon" href="icon-512.png">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
+<style>
+:root{
+  --main:#111827;
+  --sub:#374151;
+  --bg:#f3f4f6;
+  --card:#ffffff;
+  --blue:#1E3A5F;
+  --red:#dc2626;
+  --green:#16a34a;
+  --gray:#e5e7eb;
+  --yellow:#fef3c7;
+}
+*{box-sizing:border-box}
+body{
+  margin:0;
+  font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue","Yu Gothic",sans-serif;
+  background:var(--bg);
+  color:var(--main);
+  -webkit-text-size-adjust:100%;
+}
+header{
+  position:sticky;
+  top:0;
+  z-index:10;
+  background:var(--main);
+  color:white;
+  padding:8px;
+  text-align:center;
+  font-weight:bold;
+}
+header small{
+  display:block;
+  font-size:12px;
+  font-weight:normal;
+  opacity:.85;
+}
+main{
+  padding:8px;
+  padding-bottom:78px;
+}
+.card{
+  background:var(--card);
+  border-radius:14px;
+  padding:10px;
+  margin-bottom:8px;
+  box-shadow:0 2px 8px rgba(0,0,0,.08);
+}
+.view{display:none}
+.view.active{display:block}
+.tabs{
+  position:fixed;
+  bottom:0;
+  left:0;
+  right:0;
+  display:grid;
+  grid-template-columns:repeat(6,1fr);
+  background:white;
+  border-top:1px solid #ddd;
+  z-index:20;
+}
+.tab-btn{
+  border:0;
+  background:white;
+  padding:9px 3px;
+  font-size:12px;
+  color:#555;
+}
+.tab-btn.active{
+  color:var(--blue);
+  font-weight:bold;
+}
+button,input,select{
+  font-size:16px;
+  touch-action:manipulation;
+}
+button{
+  border:0;
+  border-radius:12px;
+  padding:11px;
+  background:var(--blue);
+  color:white;
+  font-weight:bold;
+  cursor:pointer;
+}
+button.secondary{background:var(--sub)}
+button.danger{background:var(--red)}
+button.green{background:var(--green)}
+button.gray{background:#6b7280}
+button.small{
+  padding:7px 9px;
+  font-size:13px;
+}
+input,select{
+  width:100%;
+  padding:11px;
+  border:1px solid #d1d5db;
+  border-radius:12px;
+  margin:5px 0 9px;
+  background:white;
+}
+.row{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:8px;
+}
+.flex{
+  display:flex;
+  gap:8px;
+  flex-wrap:wrap;
+}
+.badge{
+  display:inline-block;
+  padding:4px 8px;
+  background:#e0e7ff;
+  color:#3730a3;
+  border-radius:999px;
+  font-size:12px;
+}
+.notice{
+  color:#6b7280;
+  font-size:14px;
+}
+#scoreView h1{
+  font-size:24px;
+  margin:2px 0 5px;
+}
+#scoreView h2{
+  font-size:18px;
+  margin:2px 0;
+}
+.judge-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(50px,1fr));
+  gap:5px;
+  margin-top:6px;
+}
+.judge-box{
+  border:2px solid var(--gray);
+  border-radius:10px;
+  padding:7px 2px;
+  text-align:center;
+  background:white;
+  cursor:pointer;
+}
+.judge-box.active{
+  border-color:var(--blue);
+  background:var(--yellow);
+}
+.judge-name{
+  font-size:11px;
+  color:#555;
+}
+.judge-score{
+  font-size:18px;
+  font-weight:bold;
+  margin-top:2px;
+}
+.score-summary{
+  text-align:center;
+  padding:8px;
+}
+.compact-info{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:4px;
+  font-size:13px;
+}
+.total{
+  font-size:36px;
+  line-height:1;
+  color:var(--red);
+  font-weight:bold;
+  margin-top:4px;
+}
+.score-buttons{
+  display:grid;
+  grid-template-columns:repeat(6,1fr);
+  gap:5px;
+}
+.score-buttons button{
+  background:#111827;
+  padding:9px 0;
+  font-size:15px;
+  border-radius:9px;
+}
+.nav-buttons{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:8px;
+}
+.nav-buttons button{padding:10px}
+table{
+  width:100%;
+  border-collapse:collapse;
+}
+th,td{
+  padding:9px 5px;
+  border-bottom:1px solid #e5e7eb;
+  text-align:left;
+}
+th{
+  background:#f9fafb;
+  font-size:13px;
+}
+.name-link{
+  color:var(--blue);
+  font-weight:bold;
+  text-decoration:underline;
+  cursor:pointer;
+}
+.event-item,.player-item{
+  border-bottom:1px solid #e5e7eb;
+  padding:9px 0;
+}
+
+/* iPhone/iPad安定用：標準confirmを使わない削除確認 */
+.modal-backdrop{
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,.45);
+  z-index:100;
+  display:none;
+  align-items:center;
+  justify-content:center;
+  padding:20px;
+}
+.modal-backdrop.show{display:flex}
+.modal-card{
+  background:white;
+  width:100%;
+  max-width:360px;
+  border-radius:18px;
+  padding:18px;
+  box-shadow:0 10px 30px rgba(0,0,0,.25);
+}
+.modal-title{
+  font-size:20px;
+  font-weight:bold;
+  margin-bottom:8px;
+}
+.modal-message{
+  font-size:15px;
+  color:#374151;
+  margin-bottom:16px;
+}
+.modal-actions{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:8px;
+}
+
+
+.ocr-box{
+  border:1px dashed #9ca3af;
+  background:#f9fafb;
+  border-radius:14px;
+  padding:10px;
+  margin-top:8px;
+}
+.ocr-status{
+  font-size:14px;
+  color:#374151;
+  margin:8px 0;
+}
+.ocr-progress{
+  width:100%;
+  height:10px;
+  background:#e5e7eb;
+  border-radius:999px;
+  overflow:hidden;
+  margin:8px 0;
+}
+.ocr-progress-bar{
+  height:100%;
+  width:0%;
+  background:#1E3A5F;
+}
+.ocr-textarea{
+  width:100%;
+  min-height:150px;
+  padding:10px;
+  border:1px solid #d1d5db;
+  border-radius:12px;
+  font-size:15px;
+  line-height:1.5;
+}
+.ocr-preview-item{
+  border-bottom:1px solid #e5e7eb;
+  padding:8px 0;
+}
+.ocr-preview-item input{
+  margin:4px 0;
+}
+
+
+.team-list-item{
+  border-bottom:1px solid #e5e7eb;
+  padding:8px 0;
+}
+.input-help{
+  font-size:12px;
+  color:#6b7280;
+  margin-top:-5px;
+  margin-bottom:8px;
+}
+
+
+.flag-summary{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:8px;
+  margin-top:6px;
+}
+.flag-red,.flag-blue{
+  border-radius:14px;
+  padding:10px;
+  color:white;
+  font-weight:bold;
+  text-align:center;
+}
+.flag-red{background:#dc2626}
+.flag-blue{background:#1E3A5F}
+.flag-buttons{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:10px;
+}
+.flag-buttons button{
+  font-size:26px;
+  padding:18px 0;
+}
+.flag-buttons .red{background:#dc2626}
+.flag-buttons .blue{background:#1E3A5F}
+.result-text{
+  font-size:30px;
+  font-weight:bold;
+  text-align:center;
+  margin-top:8px;
+}
+.result-red{color:#dc2626}
+.result-blue{color:#1E3A5F}
+.result-none{color:#6b7280}
+
+
+.match-player-box{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:8px;
+}
+.match-side{
+  border-radius:14px;
+  padding:10px;
+  color:white;
+}
+.match-side.red{background:#dc2626}
+.match-side.blue{background:#1E3A5F}
+.match-side label{
+  display:block;
+  font-size:13px;
+  margin-bottom:4px;
+  color:white;
+}
+.match-side select{
+  margin:0;
+}
+.match-list-item{
+  border-bottom:1px solid #e5e7eb;
+  padding:9px 0;
+}
+.match-title{
+  font-weight:bold;
+  margin-bottom:4px;
+}
+
+
+.accordion-card{
+  overflow:hidden;
+}
+.accordion-header{
+  width:100%;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:8px;
+  background:white;
+  color:#111827;
+  padding:4px 0 8px;
+  border-radius:0;
+  text-align:left;
+}
+.accordion-header span:first-child{
+  font-size:20px;
+  font-weight:bold;
+}
+.accordion-icon{
+  font-size:20px;
+  color:#6b7280;
+}
+.accordion-content{
+  display:none;
+  padding-top:4px;
+}
+.accordion-card.open .accordion-content{
+  display:block;
+}
+
+
+.output-table{
+  width:100%;
+  border-collapse:collapse;
+  background:white;
+}
+.output-table th,
+.output-table td{
+  border:1px solid #d1d5db;
+  padding:7px 5px;
+  font-size:13px;
+}
+.output-table th{
+  background:#f3f4f6;
+}
+.print-title{
+  text-align:center;
+  margin:4px 0 12px;
+}
+.print-subtitle{
+  text-align:center;
+  color:#374151;
+  margin-bottom:12px;
+}
+.print-only{
+  display:none;
+}
+
+
+/* Ver2.8 ThemeSwitch: 通常／ダークモード切替 */
+body.dark{
+  --main:#ffffff;
+  --sub:#b0b0b0;
+  --bg:#121212;
+  --card:#1e1e1e;
+  --blue:#1E3A5F;
+  --red:#d32f2f;
+  --green:#16a34a;
+  --gray:#333333;
+  --yellow:#2a2a2a;
+  color-scheme:dark;
+}
+body.dark header{
+  background:#0f172a;
+  color:#ffffff;
+}
+body.dark main,
+body.dark .view{
+  background:var(--bg);
+  color:var(--main);
+}
+body.dark .card,
+body.dark .modal-card,
+body.dark .ocr-box,
+body.dark .output-table{
+  background:var(--card);
+  color:var(--main);
+  box-shadow:0 2px 10px rgba(0,0,0,.35);
+}
+body.dark .tabs{
+  background:#1e1e1e;
+  border-top:1px solid #333333;
+}
+body.dark .tab-btn{
+  background:#1e1e1e;
+  color:#b0b0b0;
+}
+body.dark .tab-btn.active{
+  color:#64b5f6;
+  background:#111827;
+}
+body.dark button{
+  background:#2c2c2c;
+  color:#ffffff;
+}
+body.dark button:not(.secondary):not(.danger):not(.green):not(.gray):not(.small):not(.red):not(.blue){
+  background:var(--blue);
+}
+body.dark button.secondary{
+  background:#374151;
+}
+body.dark button.danger,
+body.dark .flag-buttons .red,
+body.dark .match-side.red,
+body.dark .flag-red{
+  background:#d32f2f;
+}
+body.dark button.green{
+  background:#15803d;
+}
+body.dark button.gray{
+  background:#4b5563;
+}
+body.dark .flag-buttons .blue,
+body.dark .match-side.blue,
+body.dark .flag-blue{
+  background:#1E3A5F;
+}
+body.dark input,
+body.dark select,
+body.dark textarea,
+body.dark .ocr-textarea{
+  background:#2a2a2a;
+  color:#ffffff;
+  border-color:#444444;
+}
+body.dark input::placeholder,
+body.dark textarea::placeholder{
+  color:#9ca3af;
+}
+body.dark option{
+  background:#2a2a2a;
+  color:#ffffff;
+}
+body.dark table{
+  background:#1e1e1e;
+  color:#ffffff;
+}
+body.dark th,
+body.dark td{
+  border-bottom-color:#444444;
+}
+body.dark th,
+body.dark .output-table th{
+  background:#2a2a2a;
+  color:#ffffff;
+}
+body.dark .output-table th,
+body.dark .output-table td{
+  border-color:#444444;
+  color:#ffffff;
+}
+body.dark .judge-box{
+  background:#1e1e1e;
+  border-color:#333333;
+  color:#ffffff;
+}
+body.dark .judge-box.active{
+  background:#102a43;
+  border-color:#1E3A5F;
+}
+body.dark .judge-name,
+body.dark .notice,
+body.dark .modal-message,
+body.dark .ocr-status,
+body.dark .input-help,
+body.dark .accordion-icon,
+body.dark .print-subtitle{
+  color:#b0b0b0;
+}
+body.dark .badge{
+  background:#1e3a8a;
+  color:#dbeafe;
+}
+body.dark .score-buttons button{
+  background:#2c2c2c;
+  color:#ffffff;
+  border:1px solid #444444;
+}
+body.dark .score-buttons button:active,
+body.dark .score-buttons button.selected{
+  background:#1E3A5F;
+}
+body.dark .accordion-header{
+  background:var(--card);
+  color:#ffffff;
+}
+body.dark .event-item,
+body.dark .player-item,
+body.dark .team-list-item,
+body.dark .match-list-item,
+body.dark .ocr-preview-item{
+  border-bottom-color:#333333;
+}
+body.dark .ocr-progress{
+  background:#333333;
+}
+body.dark .ocr-progress-bar{
+  background:#1E3A5F;
+}
+body.dark .name-link{
+  color:#64b5f6;
+}
+body.dark .total{
+  color:#ff6b6b;
+}
+body.dark .result-red{
+  color:#ff6b6b;
+}
+body.dark .result-blue{
+  color:#64b5f6;
+}
+body.dark .result-none{
+  color:#b0b0b0;
+}
+body.dark .modal-backdrop{
+  background:rgba(0,0,0,.7);
+}
+body.dark .theme-note{
+  color:#b0b0b0;
+}
+
+@media print{
+  header,
+  nav,
+  .tabs,
+  .no-print,
+  .tab-btn,
+  button,
+  input,
+  select,
+  textarea{
+    display:none !important;
+  }
+  body{
+    background:white;
+    color:black;
+  }
+  main{
+    padding:0;
+  }
+  .view{
+    display:none !important;
+  }
+  #outputView{
+    display:block !important;
+  }
+  .card{
+    box-shadow:none;
+    border-radius:0;
+    margin:0;
+    padding:0;
+  }
+  .print-only{
+    display:block;
+  }
+  #outputPrintArea{
+    display:block !important;
+  }
+  @page{
+    size:A4 portrait;
+    margin:10mm;
+  }
+}
+
+
+/* Ver2.7 Stable: PC印刷PDF保存を優先 */
+@media print{
+  body{
+    background:white !important;
+    color:black !important;
+  }
+  header,
+  nav,
+  .tabs,
+  .no-print,
+  section:not(#outputView){
+    display:none !important;
+  }
+  #outputView,
+  #outputPrintArea,
+  #outputContent{
+    display:block !important;
+    visibility:visible !important;
+  }
+  main{
+    padding:0 !important;
+  }
+  .card{
+    box-shadow:none !important;
+    border-radius:0 !important;
+    margin:0 !important;
+    padding:0 !important;
+    background:white !important;
+  }
+  .output-table{
+    width:100% !important;
+    border-collapse:collapse !important;
+  }
+  .output-table th,
+  .output-table td{
+    border:1px solid #555 !important;
+    color:black !important;
+    padding:5px !important;
+    font-size:11px !important;
+  }
+  .output-table th{
+    background:#eee !important;
+  }
+  @page{
+    size:A4 portrait;
+    margin:10mm;
+  }
+}
+
+</style>
+<!-- Ver3.0 PWA Navy fixed package / UTF-8 -->
+</head>
+
+<body>
+<header>
+  空手・形 採点アプリ Ver3.0 PWA Navy
+  <small id="headerInfo">大会未選択</small>
+</header>
+
+<main>
+
+<section id="scoreView" class="view active">
+
+  <div id="scorePlayerPanel">
+    <div class="card">
+      <div class="flex" style="justify-content:space-between;align-items:center;">
+        <span class="badge" id="playerCountBadge">選手 0 / 0</span>
+        <button type="button" class="small gray" id="clearScoreBtn">点数クリア</button>
+      </div>
+      <h2 id="currentNo">No.-</h2>
+      <h1 id="currentName">選手未登録</h1>
+      <div class="judge-grid" id="judgeGrid"></div>
+    </div>
+
+    <div class="card score-summary" id="scoreSummaryCard">
+      <div class="compact-info">
+        <div>最高：<b id="maxScore">-</b></div>
+        <div>最低：<b id="minScore">-</b></div>
+      </div>
+      <div style="font-size:13px;">採用点：<b id="usedScores">-</b></div>
+      <div class="total" id="totalScore">0.0</div>
+    </div>
+
+    <div class="card" id="scoreButtonsCard">
+      <div class="score-buttons" id="scoreButtons"></div>
+    </div>
+
+    <div class="nav-buttons">
+      <button type="button" class="secondary" id="prevPlayerBtn">前の選手</button>
+      <button type="button" id="nextPlayerBtn">次の選手</button>
+    </div>
+  </div>
+
+  <div id="flagMatchPanel" style="display:none;">
+    <div class="card">
+      <div class="flex" style="justify-content:space-between;align-items:center;">
+        <span class="badge" id="matchCountBadge">試合 0 / 0</span>
+        <button type="button" class="small gray" id="clearFlagBtn">旗クリア</button>
+      </div>
+
+      <h2 id="currentMatchTitle">試合未登録</h2>
+
+      <div class="match-player-box">
+        <div class="match-side red">
+          <label>赤選手</label>
+          <select id="redPlayerSelect"></select>
+        </div>
+        <div class="match-side blue">
+          <label>青選手</label>
+          <select id="bluePlayerSelect"></select>
+        </div>
+      </div>
+
+      <div class="judge-grid" id="matchJudgeGrid"></div>
+    </div>
+
+    <div class="card score-summary">
+      <div class="flag-summary">
+        <div class="flag-red">赤：<span id="redCount">0</span></div>
+        <div class="flag-blue">青：<span id="blueCount">0</span></div>
+      </div>
+      <div id="flagWinner" class="result-text result-none">勝者：-</div>
+    </div>
+
+    <div class="card">
+      <div class="flag-buttons">
+        <button type="button" class="red" id="flagRedBtn">赤</button>
+        <button type="button" class="blue" id="flagBlueBtn">青</button>
+      </div>
+    </div>
+
+    <div class="nav-buttons">
+      <button type="button" class="secondary" id="prevMatchBtn">前の試合</button>
+      <button type="button" id="nextMatchBtn">次の試合</button>
+    </div>
+  </div>
+
+</section>
+
+<section id="rankView" class="view">
+  <div class="card">
+    <h2>順位表</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>順位</th>
+          <th>No.</th>
+          <th>氏名</th>
+          <th>所属</th>
+          <th>結果</th>
+        </tr>
+      </thead>
+      <tbody id="rankingBody"></tbody>
+    </table>
+  </div>
+
+  <div id="detailCard" class="card" style="display:none;">
+    <h2>選手詳細</h2>
+    <div id="detailContent"></div>
+    <button type="button" id="goScoreFromDetailBtn">得点入力へ</button>
+  </div>
+</section>
+
+<section id="settingView" class="view">
+  <div class="card accordion-card open">
+    <button type="button" class="accordion-header">
+      <span>大会設定</span><span class="accordion-icon">▼</span>
+    </button>
+    <div class="accordion-content">
+
+    <label>大会名</label>
+    <input id="eventName">
+
+    <label>カテゴリー名</label>
+    <input id="categoryName">
+
+    <label>判定方式</label>
+    <select id="judgeMode">
+      <option value="score">点数制</option>
+      <option value="flag">旗判定制</option>
+    </select>
+
+    <label>審判人数</label>
+    <select id="judgeCount">
+      <option value="3">3人</option>
+      <option value="5">5人</option>
+      <option value="7">7人</option>
+    </select>
+
+    <label>採点方式</label>
+    <select id="scoreMethod">
+      <option value="all">全点合計</option>
+      <option value="cut">最高点・最低点カット</option>
+    </select>
+
+    <label>同点時処理</label>
+    <select id="tieRule">
+      <option value="same">同順位</option>
+      <option value="raw">カット前合計</option>
+      <option value="min">最低点</option>
+      <option value="max">最高点</option>
+    </select>
+
+    <label>表示テーマ</label>
+    <select id="themeMode">
+      <option value="light">通常モード</option>
+      <option value="dark">ダークモード</option>
+    </select>
+    <div class="input-help theme-note">通常モード／ダークモードを切り替えます。選択内容は端末に保存されます。</div>
+
+    <button type="button" id="saveSettingsBtn">大会設定を保存</button>
+    </div>
+  </div>
+
+  <div class="card accordion-card open">
+    <button type="button" class="accordion-header">
+      <span>選手登録</span><span class="accordion-icon">▼</span>
+    </button>
+    <div class="accordion-content">
+
+    <div class="badge" style="margin-bottom:8px;">次のNo.：<span id="nextPlayerNo">1</span></div>
+
+    <label>氏名</label>
+    <input id="playerName" placeholder="例：山田 太郎">
+
+    <label>所属名</label>
+    <select id="playerTeamSelect">
+      <option value="">所属を選択</option>
+    </select>
+    <button type="button" class="small secondary" id="refreshTeamSelectBtn" style="margin-bottom:8px;">所属リスト更新</button>
+    <div class="input-help">未登録の所属は下へ直接入力できます。</div>
+    <input id="playerTeam" placeholder="例：〇〇道場">
+
+    <button type="button" class="green" id="playerSaveBtn">選手追加</button>
+    <button type="button" class="gray" id="cancelEditBtn" style="display:none;margin-top:8px;">編集キャンセル</button>
+    </div>
+  </div>
+
+  <div class="card accordion-card">
+    <button type="button" class="accordion-header">
+      <span>トーナメント表OCR仮取込</span><span class="accordion-icon">▶</span>
+    </button>
+    <div class="accordion-content">
+    <p class="notice">
+      推奨：iPhone写真アプリで文字認識 → コピー → 下のOCR読取結果へ貼り付け → 候補を作成。<br>
+      内蔵OCR読取も使えますが、精度は画像条件により変わります。
+    </p>
+
+    <div class="ocr-box">
+      <label>トーナメント表画像を選択／撮影</label>
+      <input type="file" id="ocrImageInput" accept="image/*">
+
+      <button type="button" class="green" id="startOcrBtn">内蔵OCR読取開始</button>
+
+      <div class="ocr-status" id="ocrStatus">画像を選択、またはiPhone OCR結果を貼り付けてください。</div>
+      <div class="ocr-progress">
+        <div class="ocr-progress-bar" id="ocrProgressBar"></div>
+      </div>
+
+      <label>OCR読取結果</label>
+      <textarea id="ocrRawText" class="ocr-textarea" placeholder="OCR結果がここに表示されます。&#10;例：&#10;山田 太郎　〇〇道場&#10;佐藤 花子　△△会"></textarea>
+
+      <div class="flex" style="margin-top:8px;">
+        <button type="button" class="secondary" id="parseOcrBtn">候補を作成</button>
+        <button type="button" class="gray" id="clearOcrBtn">OCR欄クリア</button>
+      </div>
+    </div>
+
+    <div id="ocrPreviewBox" style="display:none;margin-top:12px;">
+      <h3>取込候補</h3>
+      <p class="notice">必要に応じて氏名・所属名を修正してから追加してください。</p>
+      <div id="ocrPreviewList"></div>
+      <button type="button" class="green" id="addOcrPlayersBtn" style="margin-top:8px;">候補を選手一覧へ一括追加</button>
+    </div>
+    </div>
+  </div>
+
+  <div class="card accordion-card" id="matchSettingCard">
+    <button type="button" class="accordion-header">
+      <span>対戦登録（旗判定制）</span><span class="accordion-icon">▶</span>
+    </button>
+    <div class="accordion-content">
+    <p class="notice">旗判定制の場合、赤選手と青選手を選んで試合を作成します。</p>
+
+    <div class="match-player-box">
+      <div>
+        <label>赤選手</label>
+        <select id="matchRedSelect"></select>
+      </div>
+      <div>
+        <label>青選手</label>
+        <select id="matchBlueSelect"></select>
+      </div>
+    </div>
+
+    <button type="button" class="green" id="addMatchBtn">対戦追加</button>
+
+    <div id="matchList" style="margin-top:8px;"></div>
+    </div>
+  </div>
+
+  <div class="card accordion-card">
+    <button type="button" class="accordion-header">
+      <span>登録済み選手一覧</span><span class="accordion-icon">▶</span>
+    </button>
+    <div class="accordion-content">
+    <div id="playerList"></div>
+    </div>
+  </div>
+</section>
+
+
+
+<section id="outputView" class="view">
+  <div class="card no-print">
+    <h2>結果出力</h2>
+    <p class="notice">
+      現在開いている大会の結果を表示します。<br>
+      PCでは「PDF保存／印刷」からPDF保存できます。iPhone/iPadはまず結果表示確認用として使用してください。
+    </p>
+    <div class="flex">
+      <button type="button" class="green" id="refreshOutputBtn">結果を更新</button>
+      <button type="button" id="printOutputBtn">PC用：PDF保存／印刷</button>
+    </div>
+  </div>
+
+  <div class="card" id="outputPrintArea">
+    <div id="outputContent"></div>
+  </div>
+</section>
+
+<section id="teamView" class="view">
+  <div class="card accordion-card open">
+    <button type="button" class="accordion-header">
+      <span>所属登録</span><span class="accordion-icon">▼</span>
+    </button>
+    <div class="accordion-content">
+      <p class="notice">所属名はアプリ全体で共通保存されます。新規大会でも同じ所属リストを選択できます。</p>
+      <label>所属名</label>
+      <input id="teamNameInput" placeholder="例：〇〇道場">
+      <button type="button" class="green" id="addTeamBtn">所属追加</button>
+      <div id="teamList" style="margin-top:8px;"></div>
+    </div>
+  </div>
+</section>
+
+<section id="eventsView" class="view">
+  <div class="card">
+    <h2>新規大会作成</h2>
+    <input id="newEventName" placeholder="大会名">
+    <button type="button" class="green" id="createTournamentBtn">新規大会作成</button>
+  </div>
+
+  <div class="card">
+    <h2>保存済み大会一覧</h2>
+    <div id="eventList"></div>
+  </div>
+</section>
+
+</main>
+
+<nav class="tabs">
+  <button type="button" class="tab-btn active" data-view="scoreView">得点入力</button>
+  <button type="button" class="tab-btn" data-view="rankView">順位表</button>
+  <button type="button" class="tab-btn" data-view="settingView">設定</button>
+  <button type="button" class="tab-btn" data-view="outputView">出力</button>
+  <button type="button" class="tab-btn" data-view="teamView">所属</button>
+  <button type="button" class="tab-btn" data-view="eventsView">大会一覧</button>
+</nav>
+
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+<script>
+const STORAGE_KEY = "kataScoreApp_events_v10";
+const CURRENT_EVENT_KEY = "kataScoreApp_current_v10";
+const GLOBAL_TEAMS_KEY = "kataScoreApp_globalTeams_v17";
+const THEME_KEY = "kataScoreApp_theme_v28";
+
+let events = [];
+let globalTeams = [];
+let currentEventId = null;
+let currentPlayerIndex = 0;
+let currentMatchIndex = 0;
+let activeJudgeIndex = 0;
+let editingPlayerId = null;
+let detailPlayerId = null;
+let ocrCandidates = [];
+let pendingConfirmAction = null;
+
+document.addEventListener("DOMContentLoaded", init);
+
+function showAppConfirm(message, onOk){
+  pendingConfirmAction = onOk;
+  $("confirmMessage").textContent = message;
+  $("confirmModal").classList.add("show");
+}
+
+function hideAppConfirm(){
+  $("confirmModal").classList.remove("show");
+  pendingConfirmAction = null;
+}
+
+function $(id){
+  return document.getElementById(id);
+}
+
+function uid(){
+  return "id_" + Date.now().toString(36) + "_" + Math.random().toString(36).slice(2);
+}
+
+function makeTournament(name){
+  return {
+    id: uid(),
+    name: name || "新規大会",
+    category: "",
+    judgeMode: "score",
+    judgeCount: 5,
+    scoreMethod: "cut",
+    tieRule: "same",
+    teams: [],
+    players: [],
+    matches: []
+  };
+}
+
+function bindStaticEvents(){
+  document.querySelectorAll(".accordion-header").forEach(header => {
+    header.addEventListener("click", () => {
+      const card = header.closest(".accordion-card");
+      if(!card) return;
+
+      card.classList.toggle("open");
+
+      const icon = header.querySelector(".accordion-icon");
+      if(icon){
+        icon.textContent = card.classList.contains("open") ? "▼" : "▶";
+      }
+    });
+  });
+
+  document.querySelectorAll(".tab-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      showView(btn.dataset.view, btn);
+    });
+  });
+
+  $("clearScoreBtn").addEventListener("click", clearCurrentScores);
+  $("prevPlayerBtn").addEventListener("click", prevPlayer);
+  $("nextPlayerBtn").addEventListener("click", nextPlayer);
+  $("prevMatchBtn").addEventListener("click", prevMatch);
+  $("nextMatchBtn").addEventListener("click", nextMatch);
+  $("clearFlagBtn").addEventListener("click", clearCurrentFlags);
+  $("flagRedBtn").addEventListener("click", () => selectFlag("red"));
+  $("flagBlueBtn").addEventListener("click", () => selectFlag("blue"));
+  $("redPlayerSelect").addEventListener("change", updateCurrentMatchPlayers);
+  $("bluePlayerSelect").addEventListener("change", updateCurrentMatchPlayers);
+  $("goScoreFromDetailBtn").addEventListener("click", goScoreFromDetail);
+  $("saveSettingsBtn").addEventListener("click", saveSettings);
+  if($("themeMode")){
+    $("themeMode").addEventListener("change", () => {
+      applyTheme($("themeMode").value, true);
+    });
+  }
+  $("playerSaveBtn").addEventListener("click", addOrUpdatePlayer);
+  $("cancelEditBtn").addEventListener("click", cancelEditPlayer);
+
+  $("refreshTeamSelectBtn").addEventListener("click", () => {
+    loadGlobalTeams();
+    renderTeamSelect();
+    alert("所属リストを更新しました");
+  });
+
+  $("playerTeamSelect").addEventListener("focus", () => {
+    loadGlobalTeams();
+    renderTeamSelect();
+  });
+
+  $("playerTeamSelect").addEventListener("click", () => {
+    loadGlobalTeams();
+    renderTeamSelect();
+  });
+  $("createTournamentBtn").addEventListener("click", createNewTournament);
+  $("refreshOutputBtn").addEventListener("click", renderOutput);
+  $("printOutputBtn").addEventListener("click", () => {
+    renderOutput();
+    setTimeout(() => window.print(), 100);
+  });
+
+  $("confirmCancelBtn").addEventListener("click", hideAppConfirm);
+  $("confirmOkBtn").addEventListener("click", () => {
+    const action = pendingConfirmAction;
+    hideAppConfirm();
+    if(typeof action === "function"){
+      action();
+    }
+  });
+
+  $("startOcrBtn").addEventListener("click", startTournamentOcr);
+  $("parseOcrBtn").addEventListener("click", parseOcrTextToCandidates);
+  $("clearOcrBtn").addEventListener("click", clearOcrArea);
+  $("addOcrPlayersBtn").addEventListener("click", addOcrCandidatesToPlayers);
+  $("addTeamBtn").addEventListener("click", addTeam);
+  $("addMatchBtn").addEventListener("click", addMatch);
+}
+
+
+function loadTheme(){
+  const savedTheme = localStorage.getItem(THEME_KEY) || "light";
+  applyTheme(savedTheme, false);
+}
+
+function applyTheme(mode, shouldSave){
+  const theme = mode === "dark" ? "dark" : "light";
+
+  if(theme === "dark"){
+    document.body.classList.add("dark");
+  }else{
+    document.body.classList.remove("dark");
+  }
+
+  const select = $("themeMode");
+  if(select){
+    select.value = theme;
+  }
+
+  if(shouldSave){
+    try{
+      localStorage.setItem(THEME_KEY, theme);
+    }catch(e){
+      alert("テーマ設定を保存できませんでした。SafariのプライベートブラウズをOFFにしてください。");
+    }
+  }
+}
+
+function loadEvents(){
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    events = raw ? JSON.parse(raw) : [];
+    if(!Array.isArray(events)) events = [];
+  }catch(e){
+    events = [];
+  }
+}
+
+function loadGlobalTeams(){
+  try{
+    const raw = localStorage.getItem(GLOBAL_TEAMS_KEY);
+    globalTeams = raw ? JSON.parse(raw) : [];
+    if(!Array.isArray(globalTeams)) globalTeams = [];
+  }catch(e){
+    globalTeams = [];
+  }
+}
+
+function saveGlobalTeams(){
+  try{
+    localStorage.setItem(GLOBAL_TEAMS_KEY, JSON.stringify(globalTeams));
+    return true;
+  }catch(e){
+    alert("所属リストを保存できませんでした。SafariのプライベートブラウズをOFFにしてください。");
+    return false;
+  }
+}
+
+
+function saveEvents(){
+  try{
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(events));
+    if(currentEventId){
+      localStorage.setItem(CURRENT_EVENT_KEY, currentEventId);
+    }
+    return true;
+  }catch(e){
+    alert("保存できませんでした。SafariのプライベートブラウズをOFFにしてください。");
+    return false;
+  }
+}
+
+function currentEvent(){
+  return events.find(e => e.id === currentEventId) || null;
+}
+
+function init(){
+  bindStaticEvents();
+  loadTheme();
+  loadEvents();
+  loadGlobalTeams();
+
+  events.forEach(ev => {
+    if(!Array.isArray(ev.players)) ev.players = [];
+    if(!Array.isArray(ev.teams)) ev.teams = [];
+    if(!Array.isArray(ev.matches)) ev.matches = [];
+    if(!ev.judgeMode) ev.judgeMode = "score";
+
+    ev.teams.forEach(team => addTeamNameGlobal(team));
+
+    ev.players.forEach(p => {
+      if(p.team === undefined) p.team = "";
+      if(!Array.isArray(p.flags)) p.flags = Array(ev.judgeCount || 5).fill(null);
+      if(p.team) addTeamNameGlobal(p.team);
+    });
+
+    renumberPlayers(ev);
+  });
+
+  saveGlobalTeams();
+
+  const savedId = localStorage.getItem(CURRENT_EVENT_KEY);
+
+  if(events.length === 0){
+    const ev = makeTournament("新規大会");
+    events.push(ev);
+    currentEventId = ev.id;
+    saveEvents();
+  }else if(savedId && events.some(e => e.id === savedId)){
+    currentEventId = savedId;
+  }else{
+    currentEventId = events[0].id;
+  }
+
+  createScoreButtons();
+  renderAll();
+}
+
+function showView(id, btn){
+  document.querySelectorAll(".view").forEach(v => v.classList.remove("active"));
+  $(id).classList.add("active");
+
+  document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
+  btn.classList.add("active");
+
+  if(id === "rankView") renderRanking();
+  if(id === "settingView"){
+    loadGlobalTeams();
+    renderTeamSelect();
+  }
+  if(id === "teamView"){
+    loadGlobalTeams();
+    renderTeams();
+  }
+  if(id === "outputView"){
+    renderOutput();
+  }
+}
+
+function createNewTournament(){
+  const name = $("newEventName").value.trim();
+
+  if(!name){
+    alert("大会名を入力してください");
+    return;
+  }
+
+  const ev = makeTournament(name);
+  events.unshift(ev);
+  currentEventId = ev.id;
+  currentPlayerIndex = 0;
+  currentMatchIndex = 0;
+  activeJudgeIndex = 0;
+
+  if(saveEvents()){
+    $("newEventName").value = "";
+    renderAll();
+    alert("大会を作成しました");
+  }
+}
+
+function openTournament(id){
+  currentEventId = id;
+  currentPlayerIndex = 0;
+  currentMatchIndex = 0;
+  activeJudgeIndex = 0;
+
+  saveEvents();
+  renderAll();
+  alert("大会を開きました");
+}
+
+
+function duplicateTournament(id){
+  const source = events.find(e => e.id === id);
+  if(!source) return;
+
+  const idMap = {};
+
+  const copiedPlayers = Array.isArray(source.players) ? source.players.map(p => {
+    const newId = uid();
+    idMap[p.id] = newId;
+
+    return {
+      id: newId,
+      no: p.no,
+      name: p.name,
+      team: p.team || "",
+      scores: Array(source.judgeCount || 5).fill(null),
+      flags: Array(source.judgeCount || 5).fill(null)
+    };
+  }) : [];
+
+  const copied = {
+    id: uid(),
+    name: source.name + " コピー",
+    category: source.category || "",
+    judgeMode: source.judgeMode || "score",
+    judgeCount: source.judgeCount || 5,
+    scoreMethod: source.scoreMethod || "cut",
+    tieRule: source.tieRule || "same",
+    teams: Array.isArray(source.teams) ? [...source.teams] : [],
+    players: copiedPlayers,
+    matches: Array.isArray(source.matches) ? source.matches.map(match => ({
+      id: uid(),
+      redPlayerId: idMap[match.redPlayerId] || "",
+      bluePlayerId: idMap[match.bluePlayerId] || "",
+      flags: Array(source.judgeCount || 5).fill(null)
+    })) : []
+  };
+
+  renumberPlayers(copied);
+
+  const index = events.findIndex(e => e.id === id);
+  events.splice(index + 1, 0, copied);
+
+  currentEventId = copied.id;
+  currentPlayerIndex = 0;
+  currentMatchIndex = 0;
+  activeJudgeIndex = 0;
+
+  saveEvents();
+  renderAll();
+  alert("大会を複製しました。不要な選手・対戦を削除して使用できます。");
+}
+
+
+function deleteTournament(id){
+  const ev = events.find(e => e.id === id);
+  const name = ev ? ev.name : "この大会";
+
+  showAppConfirm(name + " を削除しますか？", () => {
+    events = events.filter(e => e.id !== id);
+
+    if(events.length === 0){
+      const newEv = makeTournament("新規大会");
+      events.push(newEv);
+    }
+
+    currentEventId = events[0].id;
+    currentPlayerIndex = 0;
+    currentMatchIndex = 0;
+    activeJudgeIndex = 0;
+
+    saveEvents();
+    renderAll();
+  });
+}
+
+function saveSettings(){
+  const ev = currentEvent();
+  if(!ev) return;
+
+  ev.name = $("eventName").value.trim() || "名称未設定";
+  ev.category = $("categoryName").value.trim();
+  ev.judgeMode = $("judgeMode").value;
+  ev.judgeCount = Number($("judgeCount").value);
+  ev.scoreMethod = $("scoreMethod").value;
+  ev.tieRule = $("tieRule").value;
+
+  ev.matches.forEach(m => {
+    if(!Array.isArray(m.flags)){
+      m.flags = [];
+    }
+    m.flags = m.flags.slice(0, ev.judgeCount);
+    while(m.flags.length < ev.judgeCount){
+      m.flags.push(null);
+    }
+  });
+
+  ev.players.forEach(p => {
+    p.scores = p.scores.slice(0, ev.judgeCount);
+    while(p.scores.length < ev.judgeCount){
+      p.scores.push(null);
+    }
+
+    if(!Array.isArray(p.flags)){
+      p.flags = [];
+    }
+    p.flags = p.flags.slice(0, ev.judgeCount);
+    while(p.flags.length < ev.judgeCount){
+      p.flags.push(null);
+    }
+  });
+
+  if(saveEvents()){
+    renderAll();
+    alert("大会設定を保存しました");
+  }
+}
+
+
+function addTeamNameGlobal(teamName){
+  const name = (teamName || "").trim();
+  if(!name) return;
+
+  if(!globalTeams.includes(name)){
+    globalTeams.push(name);
+    globalTeams.sort((a,b) => a.localeCompare(b, "ja"));
+  }
+}
+
+function addTeam(){
+  const name = $("teamNameInput").value.trim();
+  if(!name){
+    alert("所属名を入力してください");
+    return;
+  }
+
+  loadGlobalTeams();
+  addTeamNameGlobal(name);
+
+  if(saveGlobalTeams()){
+    loadGlobalTeams();
+    $("teamNameInput").value = "";
+    renderTeams();
+    renderTeamSelect();
+    alert("所属を追加しました");
+  }
+}
+
+function deleteTeam(teamName){
+  showAppConfirm(teamName + " を所属リストから削除しますか？\n※選手に設定済みの所属名は残ります。", () => {
+    globalTeams = globalTeams.filter(t => t !== teamName);
+    saveGlobalTeams();
+    renderAll();
+  });
+}
+
+function getSelectedOrInputTeam(){
+  const inputTeam = $("playerTeam").value.trim();
+  const selectedTeam = $("playerTeamSelect").value.trim();
+
+  return inputTeam || selectedTeam || "";
+}
+
+
+function getNextPlayerNo(ev){
+  if(!ev || ev.players.length === 0) return 1;
+
+  const nums = ev.players
+    .map(p => Number(p.no))
+    .filter(n => Number.isFinite(n));
+
+  if(nums.length === 0) return 1;
+  return Math.max(...nums) + 1;
+}
+
+function renumberPlayers(ev){
+  ev.players.forEach((p, index) => {
+    p.no = String(index + 1);
+  });
+}
+
+function addOrUpdatePlayer(){
+  const ev = currentEvent();
+  if(!ev) return;
+
+  const name = $("playerName").value.trim();
+  const team = getSelectedOrInputTeam();
+
+  if(!name){
+    alert("氏名を入力してください");
+    return;
+  }
+
+  if(editingPlayerId){
+    const p = ev.players.find(x => x.id === editingPlayerId);
+    if(p){
+      p.name = name;
+      p.team = team;
+    }
+  }else{
+    ev.players.push({
+      id: uid(),
+      no: String(getNextPlayerNo(ev)),
+      name,
+      team,
+      scores: Array(ev.judgeCount).fill(null),
+      flags: Array(ev.judgeCount).fill(null)
+    });
+  }
+
+  if(team){
+    addTeamNameGlobal(team);
+  }
+
+  renumberPlayers(ev);
+
+  editingPlayerId = null;
+  $("playerName").value = "";
+  $("playerTeam").value = "";
+  $("playerTeamSelect").value = "";
+  $("playerSaveBtn").textContent = "選手追加";
+  $("cancelEditBtn").style.display = "none";
+
+  saveEvents();
+  renderAll();
+}
+
+function editPlayer(id){
+  const ev = currentEvent();
+  const p = ev.players.find(x => x.id === id);
+  if(!p) return;
+
+  editingPlayerId = id;
+  $("playerName").value = p.name;
+
+  const team = p.team || "";
+  const evTeams = globalTeams || [];
+
+  if(team && evTeams.includes(team)){
+    $("playerTeamSelect").value = team;
+    $("playerTeam").value = "";
+  }else{
+    $("playerTeamSelect").value = "";
+    $("playerTeam").value = team;
+  }
+
+  $("playerSaveBtn").textContent = "選手更新";
+  $("cancelEditBtn").style.display = "block";
+}
+
+function cancelEditPlayer(){
+  editingPlayerId = null;
+  $("playerName").value = "";
+  $("playerTeam").value = "";
+  $("playerTeamSelect").value = "";
+  $("playerSaveBtn").textContent = "選手追加";
+  $("cancelEditBtn").style.display = "none";
+}
+
+function deletePlayer(id){
+  showAppConfirm("この選手を削除しますか？", () => {
+    const ev = currentEvent();
+    ev.players = ev.players.filter(p => p.id !== id);
+    ev.matches = (ev.matches || []).filter(m => m.redPlayerId !== id && m.bluePlayerId !== id);
+    renumberPlayers(ev);
+    currentPlayerIndex = Math.max(0, Math.min(currentPlayerIndex, ev.players.length - 1));
+
+    saveEvents();
+    renderAll();
+  });
+}
+
+function createScoreButtons(){
+  const box = $("scoreButtons");
+  box.innerHTML = "";
+
+  for(let s = 6.0; s <= 9.0001; s += 0.1){
+    const score = s.toFixed(1);
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.textContent = score;
+    btn.addEventListener("click", () => {
+      selectScore(Number(score));
+    });
+    box.appendChild(btn);
+  }
+}
+
+function selectScore(score){
+  const ev = currentEvent();
+  if(!ev || ev.players.length === 0) return;
+
+  if(activeJudgeIndex < 0) return;
+
+  const p = ev.players[currentPlayerIndex];
+  p.scores[activeJudgeIndex] = score;
+
+  if(activeJudgeIndex < ev.judgeCount - 1){
+    activeJudgeIndex++;
+  }else{
+    activeJudgeIndex = -1;
+  }
+
+  saveEvents();
+  renderScoreInput();
+  renderRanking();
+  renderOutput();
+}
+
+function selectFlag(color){
+  const ev = currentEvent();
+  if(!ev || ev.matches.length === 0) return;
+
+  if(activeJudgeIndex < 0) return;
+
+  const match = ev.matches[currentMatchIndex];
+
+  if(!Array.isArray(match.flags)){
+    match.flags = Array(ev.judgeCount).fill(null);
+  }
+
+  match.flags[activeJudgeIndex] = color;
+
+  if(activeJudgeIndex < ev.judgeCount - 1){
+    activeJudgeIndex++;
+  }else{
+    activeJudgeIndex = -1;
+  }
+
+  saveEvents();
+  renderScoreInput();
+  renderRanking();
+}
+
+function calcFlag(match, ev){
+  const flags = Array.isArray(match.flags) ? match.flags.slice(0, ev.judgeCount) : Array(ev.judgeCount).fill(null);
+  const red = flags.filter(v => v === "red").length;
+  const blue = flags.filter(v => v === "blue").length;
+
+  let winner = null;
+  if(red > blue) winner = "red";
+  if(blue > red) winner = "blue";
+
+  return {
+    red,
+    blue,
+    winner,
+    complete: flags.filter(Boolean).length === ev.judgeCount,
+    flags
+  };
+}
+
+function clearCurrentScores(){
+  const ev = currentEvent();
+  if(!ev || ev.players.length === 0) return;
+
+  ev.players[currentPlayerIndex].scores = Array(ev.judgeCount).fill(null);
+  ev.players[currentPlayerIndex].flags = Array(ev.judgeCount).fill(null);
+  activeJudgeIndex = 0;
+
+  saveEvents();
+  renderAll();
+}
+
+function prevPlayer(){
+  const ev = currentEvent();
+  if(!ev || ev.players.length === 0) return;
+
+  currentPlayerIndex = Math.max(0, currentPlayerIndex - 1);
+  activeJudgeIndex = 0;
+  renderScoreInput();
+}
+
+function nextPlayer(){
+  const ev = currentEvent();
+  if(!ev || ev.players.length === 0) return;
+
+  currentPlayerIndex = Math.min(ev.players.length - 1, currentPlayerIndex + 1);
+  activeJudgeIndex = 0;
+  renderScoreInput();
+}
+
+function round1(n){
+  return Math.round(n * 10) / 10;
+}
+
+function formatScore(v){
+  return v === null || v === undefined ? "-" : Number(v).toFixed(1);
+}
+
+function calcScore(p, ev){
+  const scores = p.scores.slice(0, ev.judgeCount).filter(v => v !== null);
+
+  if(scores.length === 0){
+    return {
+      total:0,
+      rawTotal:0,
+      max:null,
+      min:null,
+      used:[],
+      complete:false
+    };
+  }
+
+  const rawTotal = round1(scores.reduce((a,b) => a + b, 0));
+  const max = Math.max(...scores);
+  const min = Math.min(...scores);
+  let used = [...scores];
+
+  if(ev.scoreMethod === "cut" && scores.length >= 3){
+    used = [...scores].sort((a,b) => a - b);
+    used.shift();
+    used.pop();
+  }
+
+  return {
+    total: round1(used.reduce((a,b) => a + b, 0)),
+    rawTotal,
+    max,
+    min,
+    used,
+    complete: scores.length === ev.judgeCount
+  };
+}
+
+function getRanking(){
+  const ev = currentEvent();
+  if(!ev) return [];
+
+  if(ev.judgeMode === "flag"){
+    const rows = [];
+
+    (ev.matches || []).forEach((match, index) => {
+      const f = calcFlag(match, ev);
+      rows.push({
+        match,
+        matchIndex:index,
+        ...f
+      });
+    });
+
+    rows.forEach((r, i) => r.rank = i + 1);
+    return rows;
+  }
+
+  const rows = ev.players.map(p => {
+    return {
+      player:p,
+      ...calcScore(p, ev)
+    };
+  });
+
+  rows.sort((a,b) => {
+    if(b.total !== a.total) return b.total - a.total;
+
+    if(ev.tieRule === "raw" && b.rawTotal !== a.rawTotal) return b.rawTotal - a.rawTotal;
+    if(ev.tieRule === "min" && b.min !== a.min) return b.min - a.min;
+    if(ev.tieRule === "max" && b.max !== a.max) return b.max - a.max;
+
+    return (Number(a.player.no) || 0) - (Number(b.player.no) || 0);
+  });
+
+  let prev = null;
+  let rank = 0;
+
+  rows.forEach((r, i) => {
+    const same =
+      prev &&
+      r.total === prev.total &&
+      (
+        ev.tieRule === "same" ||
+        (ev.tieRule === "raw" && r.rawTotal === prev.rawTotal) ||
+        (ev.tieRule === "min" && r.min === prev.min) ||
+        (ev.tieRule === "max" && r.max === prev.max)
+      );
+
+    if(same){
+      r.rank = rank;
+    }else{
+      rank = i + 1;
+      r.rank = rank;
+    }
+
+    prev = r;
+  });
+
+  return rows;
+}
+
+
+function setOcrStatus(text, percent){
+  $("ocrStatus").textContent = text;
+  if(typeof percent === "number"){
+    $("ocrProgressBar").style.width = Math.max(0, Math.min(100, percent)) + "%";
+  }
+}
+
+async function startTournamentOcr(){
+  const input = $("ocrImageInput");
+  const file = input.files && input.files[0];
+
+  if(!file){
+    alert("画像を選択してください");
+    return;
+  }
+
+  if(typeof Tesseract === "undefined"){
+    alert("OCRライブラリを読み込めませんでした。インターネット接続を確認してください。");
+    return;
+  }
+
+  $("startOcrBtn").disabled = true;
+  setOcrStatus("OCR読取中です。少し時間がかかります。", 5);
+
+  try{
+    const result = await Tesseract.recognize(
+      file,
+      "jpn+eng",
+      {
+        logger: m => {
+          if(m.status){
+            const pct = m.progress ? Math.round(m.progress * 100) : 0;
+            setOcrStatus("OCR処理中：" + m.status + " " + pct + "%", pct);
+          }
+        }
+      }
+    );
+
+    const text = result && result.data && result.data.text ? result.data.text : "";
+    $("ocrRawText").value = text.trim();
+
+    setOcrStatus("OCR読取が完了しました。候補を作成してください。", 100);
+  }catch(e){
+    console.error(e);
+    setOcrStatus("OCR読取に失敗しました。画像を変えて再度お試しください。", 0);
+    alert("OCR読取に失敗しました。");
+  }finally{
+    $("startOcrBtn").disabled = false;
+  }
+}
+
+function normalizeOcrLine(line){
+  return line
+    .replace(/[|｜]/g, " ")
+    .replace(/[　\t]+/g, " ")
+    .replace(/\s{2,}/g, " ")
+    .trim();
+}
+
+function parseOcrTextToCandidates(){
+  const raw = $("ocrRawText").value.trim();
+
+  if(!raw){
+    alert("OCR読取結果が空です");
+    return;
+  }
+
+  const lines = raw
+    .split(/\r?\n/)
+    .map(normalizeOcrLine)
+    .filter(line => line.length >= 2)
+    .filter(line => !/^(No\.?|番号|氏名|所属|順位|選手|トーナメント|大会)$/i.test(line));
+
+  ocrCandidates = [];
+
+  lines.forEach(line => {
+    let cleaned = line
+      .replace(/^[0-9０-９]+[\.\-、\s]*/g, "")
+      .trim();
+
+    if(!cleaned) return;
+
+    let name = "";
+    let team = "";
+
+    // カンマ・読点・タブ・複数スペース区切りを優先
+    const parts = cleaned.split(/[,\u3001/／]+|\s{2,}/).map(x => x.trim()).filter(Boolean);
+
+    if(parts.length >= 2){
+      name = parts[0];
+      team = parts.slice(1).join(" ");
+    }else{
+      // 空白1個の場合は、最後の語を所属候補にするより、まずは氏名として扱う
+      name = cleaned;
+      team = "";
+    }
+
+    // 明らかに短すぎる記号のみは除外
+    if(name.replace(/[^\p{L}\p{N}一-龥ぁ-んァ-ン]/gu, "").length < 2) return;
+
+    ocrCandidates.push({
+      name,
+      team
+    });
+  });
+
+  renderOcrPreview();
+}
+
+function renderOcrPreview(){
+  const box = $("ocrPreviewBox");
+  const list = $("ocrPreviewList");
+  list.innerHTML = "";
+
+  if(ocrCandidates.length === 0){
+    box.style.display = "none";
+    alert("取込候補が見つかりませんでした。OCR結果を手修正してから再度「候補を作成」を押してください。");
+    return;
+  }
+
+  box.style.display = "block";
+
+  ocrCandidates.forEach((c, index) => {
+    const item = document.createElement("div");
+    item.className = "ocr-preview-item";
+
+    const label = document.createElement("div");
+    label.innerHTML = `<b>候補 ${index + 1}</b>`;
+
+    const nameInput = document.createElement("input");
+    nameInput.placeholder = "氏名";
+    nameInput.value = c.name;
+    nameInput.addEventListener("input", () => {
+      ocrCandidates[index].name = nameInput.value.trim();
+    });
+
+    const teamInput = document.createElement("input");
+    teamInput.placeholder = "所属名";
+    teamInput.value = c.team || "";
+    teamInput.addEventListener("input", () => {
+      ocrCandidates[index].team = teamInput.value.trim();
+    });
+
+    const deleteBtn = document.createElement("button");
+    deleteBtn.type = "button";
+    deleteBtn.className = "small danger";
+    deleteBtn.textContent = "候補削除";
+    deleteBtn.addEventListener("click", () => {
+      ocrCandidates.splice(index, 1);
+      renderOcrPreview();
+    });
+
+    item.appendChild(label);
+    item.appendChild(nameInput);
+    item.appendChild(teamInput);
+    item.appendChild(deleteBtn);
+    list.appendChild(item);
+  });
+}
+
+function addOcrCandidatesToPlayers(){
+  const ev = currentEvent();
+  if(!ev) return;
+
+  const valid = ocrCandidates
+    .map(c => ({
+      name: (c.name || "").trim(),
+      team: (c.team || "").trim()
+    }))
+    .filter(c => c.name);
+
+  if(valid.length === 0){
+    alert("追加できる候補がありません");
+    return;
+  }
+
+  valid.forEach(c => {
+    if(c.team){
+      addTeamNameGlobal(c.team);
+    }
+
+    ev.players.push({
+      id: uid(),
+      no: String(getNextPlayerNo(ev)),
+      name: c.name,
+      team: c.team,
+      scores: Array(ev.judgeCount).fill(null),
+      flags: Array(ev.judgeCount).fill(null)
+    });
+    renumberPlayers(ev);
+  });
+
+  ocrCandidates = [];
+  $("ocrPreviewList").innerHTML = "";
+  $("ocrPreviewBox").style.display = "none";
+  $("ocrRawText").value = "";
+  $("ocrImageInput").value = "";
+  setOcrStatus("選手一覧へ追加しました。", 0);
+
+  saveEvents();
+  renderAll();
+  alert(valid.length + "名を追加しました");
+}
+
+function clearOcrArea(){
+  ocrCandidates = [];
+  $("ocrImageInput").value = "";
+  $("ocrRawText").value = "";
+  $("ocrPreviewList").innerHTML = "";
+  $("ocrPreviewBox").style.display = "none";
+  setOcrStatus("画像を選択、またはiPhone OCR結果を貼り付けてください。", 0);
+}
+
+
+
+function escapeHtml(value){
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+function getModeText(ev){
+  return ev && ev.judgeMode === "flag" ? "旗判定制" : "点数制";
+}
+
+function renderOutput(){
+  const ev = currentEvent();
+  const box = $("outputContent");
+  if(!box) return;
+
+  if(!ev){
+    box.innerHTML = "<p>大会が選択されていません。</p>";
+    return;
+  }
+
+  if(ev.judgeMode === "flag"){
+    renderFlagOutput(ev, box);
+  }else{
+    renderScoreOutput(ev, box);
+  }
+}
+
+function renderOutputHeader(ev){
+  return `
+    <div class="print-title">
+      <h1>${escapeHtml(ev.name || "大会名未設定")}</h1>
+    </div>
+    <div class="print-subtitle">
+      ${escapeHtml(ev.category || "カテゴリー未設定")} / ${getModeText(ev)} / 審判${ev.judgeCount}人
+    </div>
+  `;
+}
+
+function renderScoreOutput(ev, box){
+  const ranking = getRanking();
+
+  let judgeHeaders = "";
+  for(let i = 0; i < ev.judgeCount; i++){
+    judgeHeaders += `<th>審判${i + 1}</th>`;
+  }
+
+  let rows = "";
+
+  ranking.forEach(r => {
+    const p = r.player;
+    const c = calcScore(p, ev);
+    const scores = p.scores.slice(0, ev.judgeCount).map(s => `<td>${formatScore(s)}</td>`).join("");
+
+    rows += `
+      <tr>
+        <td>${r.rank}</td>
+        <td>${escapeHtml(p.no)}</td>
+        <td>${escapeHtml(p.name)}</td>
+        <td>${escapeHtml(p.team || "-")}</td>
+        ${scores}
+        <td>${c.used.length ? c.used.map(formatScore).join(" / ") : "-"}</td>
+        <td><b>${c.total.toFixed(1)}</b></td>
+      </tr>
+    `;
+  });
+
+  if(!rows){
+    rows = `<tr><td colspan="${6 + ev.judgeCount}">選手が登録されていません。</td></tr>`;
+  }
+
+  box.innerHTML = `
+    ${renderOutputHeader(ev)}
+    <h2>順位表</h2>
+    <table class="output-table">
+      <thead>
+        <tr>
+          <th>順位</th>
+          <th>No.</th>
+          <th>氏名</th>
+          <th>所属</th>
+          ${judgeHeaders}
+          <th>採用点</th>
+          <th>合計</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${rows}
+      </tbody>
+    </table>
+  `;
+}
+
+function renderFlagOutput(ev, box){
+  const rowsData = getRanking();
+
+  let judgeHeaders = "";
+  for(let i = 0; i < ev.judgeCount; i++){
+    judgeHeaders += `<th>審判${i + 1}</th>`;
+  }
+
+  let rows = "";
+
+  rowsData.forEach(r => {
+    const match = r.match;
+    const f = calcFlag(match, ev);
+
+    const redPlayer = getPlayerLabelById(ev, match.redPlayerId);
+    const bluePlayer = getPlayerLabelById(ev, match.bluePlayerId);
+
+    const winner =
+      f.winner === "red" ? "赤：" + redPlayer :
+      f.winner === "blue" ? "青：" + bluePlayer :
+      "-";
+
+    const flags = f.flags.map(flag => {
+      if(flag === "red") return "<td>赤</td>";
+      if(flag === "blue") return "<td>青</td>";
+      return "<td>-</td>";
+    }).join("");
+
+    rows += `
+      <tr>
+        <td>試合${r.matchIndex + 1}</td>
+        <td>${escapeHtml(redPlayer)}</td>
+        <td>${escapeHtml(bluePlayer)}</td>
+        ${flags}
+        <td>赤 ${f.red} / 青 ${f.blue}</td>
+        <td><b>${escapeHtml(winner)}</b></td>
+      </tr>
+    `;
+  });
+
+  if(!rows){
+    rows = `<tr><td colspan="${5 + ev.judgeCount}">対戦が登録されていません。</td></tr>`;
+  }
+
+  box.innerHTML = `
+    ${renderOutputHeader(ev)}
+    <h2>旗判定結果</h2>
+    <table class="output-table">
+      <thead>
+        <tr>
+          <th>試合</th>
+          <th>赤選手</th>
+          <th>青選手</th>
+          ${judgeHeaders}
+          <th>旗数</th>
+          <th>勝者</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${rows}
+      </tbody>
+    </table>
+  `;
+}
+
+
+function renderAll(){
+  renderHeader();
+  renderSettings();
+  renderTeams();
+  renderTeamSelect();
+  renderMatchPlayerSelects();
+  renderMatches();
+  renderNextPlayerNo();
+  renderScoreInput();
+  renderPlayers();
+  renderEvents();
+  renderRanking();
+}
+
+
+
+function getPlayerLabelById(ev, id){
+  const p = ev.players.find(player => player.id === id);
+  if(!p) return "未選択";
+  return `No.${p.no} ${p.name}${p.team ? "（" + p.team + "）" : ""}`;
+}
+
+function addMatch(){
+  const ev = currentEvent();
+  if(!ev) return;
+
+  const redId = $("matchRedSelect").value;
+  const blueId = $("matchBlueSelect").value;
+
+  if(!redId || !blueId){
+    alert("赤選手・青選手を選択してください");
+    return;
+  }
+
+  if(redId === blueId){
+    alert("赤選手と青選手は別の選手を選択してください");
+    return;
+  }
+
+  ev.matches.push({
+    id: uid(),
+    redPlayerId: redId,
+    bluePlayerId: blueId,
+    flags: Array(ev.judgeCount).fill(null)
+  });
+
+  currentMatchIndex = ev.matches.length - 1;
+  activeJudgeIndex = 0;
+
+  saveEvents();
+  renderAll();
+}
+
+function deleteMatch(id){
+  showAppConfirm("この対戦を削除しますか？", () => {
+    const ev = currentEvent();
+    ev.matches = ev.matches.filter(m => m.id !== id);
+    currentMatchIndex = Math.max(0, Math.min(currentMatchIndex, ev.matches.length - 1));
+    activeJudgeIndex = 0;
+
+    saveEvents();
+    renderAll();
+  });
+}
+
+function openMatch(index){
+  const ev = currentEvent();
+  if(!ev || !ev.matches[index]) return;
+
+  currentMatchIndex = index;
+  activeJudgeIndex = 0;
+  renderScoreInput();
+}
+
+function prevMatch(){
+  const ev = currentEvent();
+  if(!ev || ev.matches.length === 0) return;
+
+  currentMatchIndex = Math.max(0, currentMatchIndex - 1);
+  activeJudgeIndex = 0;
+  renderScoreInput();
+}
+
+function nextMatch(){
+  const ev = currentEvent();
+  if(!ev || ev.matches.length === 0) return;
+
+  currentMatchIndex = Math.min(ev.matches.length - 1, currentMatchIndex + 1);
+  activeJudgeIndex = 0;
+  renderScoreInput();
+}
+
+function clearCurrentFlags(){
+  const ev = currentEvent();
+  if(!ev || ev.matches.length === 0) return;
+
+  ev.matches[currentMatchIndex].flags = Array(ev.judgeCount).fill(null);
+  activeJudgeIndex = 0;
+
+  saveEvents();
+  renderAll();
+}
+
+function updateCurrentMatchPlayers(){
+  const ev = currentEvent();
+  if(!ev || ev.matches.length === 0) return;
+
+  const match = ev.matches[currentMatchIndex];
+  const redId = $("redPlayerSelect").value;
+  const blueId = $("bluePlayerSelect").value;
+
+  if(redId && blueId && redId === blueId){
+    alert("赤選手と青選手は別の選手を選択してください");
+    renderScoreInput();
+    return;
+  }
+
+  match.redPlayerId = redId;
+  match.bluePlayerId = blueId;
+
+  saveEvents();
+  renderAll();
+}
+
+function fillPlayerSelect(select, ev, selectedId, placeholder){
+  select.innerHTML = "";
+
+  const empty = document.createElement("option");
+  empty.value = "";
+  empty.textContent = placeholder || "選手を選択";
+  select.appendChild(empty);
+
+  if(!ev) return;
+
+  ev.players.forEach(p => {
+    const option = document.createElement("option");
+    option.value = p.id;
+    option.textContent = getPlayerLabelById(ev, p.id);
+    select.appendChild(option);
+  });
+
+  if(selectedId && ev.players.some(p => p.id === selectedId)){
+    select.value = selectedId;
+  }
+}
+
+function renderMatchPlayerSelects(){
+  const ev = currentEvent();
+
+  if($("matchRedSelect")){
+    fillPlayerSelect($("matchRedSelect"), ev, "", "赤選手を選択");
+  }
+
+  if($("matchBlueSelect")){
+    fillPlayerSelect($("matchBlueSelect"), ev, "", "青選手を選択");
+  }
+
+  if($("redPlayerSelect") && $("bluePlayerSelect")){
+    const match = ev && ev.matches ? ev.matches[currentMatchIndex] : null;
+    fillPlayerSelect($("redPlayerSelect"), ev, match ? match.redPlayerId : "", "赤選手");
+    fillPlayerSelect($("bluePlayerSelect"), ev, match ? match.bluePlayerId : "", "青選手");
+  }
+}
+
+function renderMatches(){
+  const ev = currentEvent();
+  const box = $("matchList");
+  if(!box) return;
+
+  box.innerHTML = "";
+
+  if(!ev || !ev.matches || ev.matches.length === 0){
+    box.innerHTML = '<p class="notice">対戦が登録されていません。</p>';
+    return;
+  }
+
+  ev.matches.forEach((match, index) => {
+    const item = document.createElement("div");
+    item.className = "match-list-item";
+
+    const f = calcFlag(match, ev);
+    const winnerName = f.winner === "red"
+      ? getPlayerLabelById(ev, match.redPlayerId)
+      : f.winner === "blue"
+        ? getPlayerLabelById(ev, match.bluePlayerId)
+        : "-";
+
+    const title = document.createElement("div");
+    title.className = "match-title";
+    title.textContent = `試合${index + 1}`;
+
+    const desc = document.createElement("div");
+    desc.className = "notice";
+    desc.textContent = `赤：${getPlayerLabelById(ev, match.redPlayerId)} / 青：${getPlayerLabelById(ev, match.bluePlayerId)} / 勝者：${winnerName}`;
+
+    const btnBox = document.createElement("div");
+    btnBox.className = "flex";
+    btnBox.style.marginTop = "7px";
+
+    const openBtn = document.createElement("button");
+    openBtn.type = "button";
+    openBtn.className = "small";
+    openBtn.textContent = "入力";
+    openBtn.addEventListener("click", () => {
+      openMatch(index);
+      const scoreTab = document.querySelector('.tab-btn[data-view="scoreView"]');
+      showView("scoreView", scoreTab);
+    });
+
+    const delBtn = document.createElement("button");
+    delBtn.type = "button";
+    delBtn.className = "small danger";
+    delBtn.textContent = "削除";
+    delBtn.addEventListener("click", () => deleteMatch(match.id));
+
+    btnBox.appendChild(openBtn);
+    btnBox.appendChild(delBtn);
+
+    item.appendChild(title);
+    item.appendChild(desc);
+    item.appendChild(btnBox);
+    box.appendChild(item);
+  });
+}
+
+
+function renderTeams(){
+  loadGlobalTeams();
+  const box = $("teamList");
+  if(!box) return;
+
+  box.innerHTML = "";
+
+  if(!globalTeams || globalTeams.length === 0){
+    box.innerHTML = '<p class="notice">所属が登録されていません。</p>';
+    return;
+  }
+
+  globalTeams.forEach(team => {
+    const item = document.createElement("div");
+    item.className = "team-list-item";
+
+    const name = document.createElement("span");
+    name.textContent = team;
+
+    const btnBox = document.createElement("div");
+    btnBox.className = "flex";
+    btnBox.style.marginTop = "6px";
+
+    const delBtn = document.createElement("button");
+    delBtn.type = "button";
+    delBtn.className = "small danger";
+    delBtn.textContent = "削除";
+    delBtn.addEventListener("click", () => deleteTeam(team));
+
+    btnBox.appendChild(delBtn);
+    item.appendChild(name);
+    item.appendChild(btnBox);
+    box.appendChild(item);
+  });
+}
+
+function renderTeamSelect(){
+  const ev = currentEvent();
+  const select = $("playerTeamSelect");
+  if(!select) return;
+
+  const currentValue = select.value;
+  select.innerHTML = "";
+
+  const empty = document.createElement("option");
+  empty.value = "";
+  empty.textContent = "所属を選択";
+  select.appendChild(empty);
+
+  if(ev && Array.isArray(ev.teams)){
+    ev.teams.forEach(team => {
+      const option = document.createElement("option");
+      option.value = team;
+      option.textContent = team;
+      select.appendChild(option);
+    });
+  }
+
+  if(currentValue && Array.from(select.options).some(o => o.value === currentValue)){
+    select.value = currentValue;
+  }
+}
+
+
+function renderNextPlayerNo(){
+  const ev = currentEvent();
+  const el = $("nextPlayerNo");
+  if(el){
+    el.textContent = ev ? getNextPlayerNo(ev) : 1;
+  }
+}
+
+function renderHeader(){
+  const ev = currentEvent();
+  $("headerInfo").textContent = ev ? `${ev.name}${ev.category ? " / " + ev.category : ""}` : "大会未選択";
+}
+
+function renderSettings(){
+  const ev = currentEvent();
+  if(!ev) return;
+
+  $("eventName").value = ev.name;
+  $("categoryName").value = ev.category;
+  $("judgeMode").value = ev.judgeMode || "score";
+  $("judgeCount").value = ev.judgeCount;
+  $("scoreMethod").value = ev.scoreMethod;
+  $("tieRule").value = ev.tieRule;
+  applyTheme(localStorage.getItem(THEME_KEY) || "light", false);
+}
+
+function renderModePanels(ev){
+  const mode = ev && ev.judgeMode ? ev.judgeMode : "score";
+  const isFlag = mode === "flag";
+
+  $("scorePlayerPanel").style.display = isFlag ? "none" : "block";
+  $("flagMatchPanel").style.display = isFlag ? "block" : "none";
+
+  const matchCard = $("matchSettingCard");
+  if(matchCard){
+    matchCard.style.display = isFlag ? "block" : "none";
+  }
+}
+
+function renderScoreInput(){
+  const ev = currentEvent();
+
+  renderModePanels(ev);
+
+  if(!ev){
+    return;
+  }
+
+  if(ev.judgeMode === "flag"){
+    renderFlagMatchInput(ev);
+    return;
+  }
+
+  const grid = $("judgeGrid");
+
+  if(!ev.players || ev.players.length === 0){
+    $("currentNo").textContent = "No.-";
+    $("currentName").textContent = "選手未登録";
+    $("playerCountBadge").textContent = "選手 0 / 0";
+    grid.innerHTML = "";
+    $("maxScore").textContent = "-";
+    $("minScore").textContent = "-";
+    $("usedScores").textContent = "-";
+    $("totalScore").textContent = "0.0";
+    return;
+  }
+
+  const p = ev.players[currentPlayerIndex];
+  const c = calcScore(p, ev);
+
+  $("currentNo").textContent = `No.${p.no}`;
+  $("currentName").textContent = p.team ? `${p.name}（${p.team}）` : `${p.name}`;
+  $("playerCountBadge").textContent = `選手 ${currentPlayerIndex + 1} / ${ev.players.length}`;
+
+  grid.innerHTML = "";
+
+  for(let i = 0; i < ev.judgeCount; i++){
+    const div = document.createElement("div");
+    div.className = "judge-box" + (i === activeJudgeIndex ? " active" : "");
+
+    div.innerHTML = `
+      <div class="judge-name">審判${i + 1}</div>
+      <div class="judge-score">${formatScore(p.scores[i])}</div>
+    `;
+    div.addEventListener("click", () => {
+      activeJudgeIndex = i;
+      renderScoreInput();
+    });
+    grid.appendChild(div);
+  }
+
+  $("maxScore").textContent = formatScore(c.max);
+  $("minScore").textContent = formatScore(c.min);
+  $("usedScores").textContent = c.used.length ? c.used.map(formatScore).join(" / ") : "-";
+  $("totalScore").textContent = c.total.toFixed(1);
+}
+
+function renderFlagMatchInput(ev){
+  const grid = $("matchJudgeGrid");
+
+  if(!ev.matches || ev.matches.length === 0){
+    $("matchCountBadge").textContent = "試合 0 / 0";
+    $("currentMatchTitle").textContent = "試合未登録";
+    fillPlayerSelect($("redPlayerSelect"), ev, "", "赤選手");
+    fillPlayerSelect($("bluePlayerSelect"), ev, "", "青選手");
+    grid.innerHTML = "";
+    $("redCount").textContent = "0";
+    $("blueCount").textContent = "0";
+    $("flagWinner").textContent = "勝者：-";
+    $("flagWinner").className = "result-text result-none";
+    return;
+  }
+
+  currentMatchIndex = Math.max(0, Math.min(currentMatchIndex, ev.matches.length - 1));
+  const match = ev.matches[currentMatchIndex];
+  const f = calcFlag(match, ev);
+
+  $("matchCountBadge").textContent = `試合 ${currentMatchIndex + 1} / ${ev.matches.length}`;
+  $("currentMatchTitle").textContent = `試合${currentMatchIndex + 1}`;
+
+  fillPlayerSelect($("redPlayerSelect"), ev, match.redPlayerId, "赤選手");
+  fillPlayerSelect($("bluePlayerSelect"), ev, match.bluePlayerId, "青選手");
+
+  grid.innerHTML = "";
+
+  for(let i = 0; i < ev.judgeCount; i++){
+    const div = document.createElement("div");
+    div.className = "judge-box" + (i === activeJudgeIndex ? " active" : "");
+
+    const flag = f.flags[i];
+    const judgeValue = flag === "red" ? "赤" : flag === "blue" ? "青" : "-";
+
+    div.innerHTML = `
+      <div class="judge-name">審判${i + 1}</div>
+      <div class="judge-score">${judgeValue}</div>
+    `;
+    div.addEventListener("click", () => {
+      activeJudgeIndex = i;
+      renderScoreInput();
+    });
+    grid.appendChild(div);
+  }
+
+  $("redCount").textContent = f.red;
+  $("blueCount").textContent = f.blue;
+
+  if(f.winner === "red"){
+    $("flagWinner").textContent = "勝者：赤 " + getPlayerLabelById(ev, match.redPlayerId);
+    $("flagWinner").className = "result-text result-red";
+  }else if(f.winner === "blue"){
+    $("flagWinner").textContent = "勝者：青 " + getPlayerLabelById(ev, match.bluePlayerId);
+    $("flagWinner").className = "result-text result-blue";
+  }else{
+    $("flagWinner").textContent = "勝者：-";
+    $("flagWinner").className = "result-text result-none";
+  }
+}
+
+function renderPlayers(){
+  const ev = currentEvent();
+  const box = $("playerList");
+  box.innerHTML = "";
+
+  if(!ev || ev.players.length === 0){
+    box.innerHTML = '<p class="notice">選手が登録されていません。</p>';
+    return;
+  }
+
+  ev.players.forEach(p => {
+    const item = document.createElement("div");
+    item.className = "player-item";
+
+    const title = document.createElement("div");
+
+    const noBold = document.createElement("b");
+    noBold.textContent = `No.${p.no}`;
+    title.appendChild(noBold);
+    title.appendChild(document.createTextNode("　" + p.name));
+
+    if(p.team){
+      title.appendChild(document.createTextNode("　"));
+      const teamSpan = document.createElement("span");
+      teamSpan.className = "notice";
+      teamSpan.textContent = p.team;
+      title.appendChild(teamSpan);
+    }
+
+    const btnBox = document.createElement("div");
+    btnBox.className = "flex";
+    btnBox.style.marginTop = "7px";
+
+    const editBtn = document.createElement("button");
+    editBtn.type = "button";
+    editBtn.className = "small secondary";
+    editBtn.textContent = "編集";
+    editBtn.addEventListener("click", () => editPlayer(p.id));
+
+    const delBtn = document.createElement("button");
+    delBtn.type = "button";
+    delBtn.className = "small danger";
+    delBtn.textContent = "削除";
+    delBtn.addEventListener("click", () => deletePlayer(p.id));
+
+    btnBox.appendChild(editBtn);
+    btnBox.appendChild(delBtn);
+    item.appendChild(title);
+    item.appendChild(btnBox);
+    box.appendChild(item);
+  });
+}
+
+function renderEvents(){
+  const box = $("eventList");
+  box.innerHTML = "";
+
+  events.forEach(ev => {
+    const item = document.createElement("div");
+    item.className = "event-item";
+
+    const title = document.createElement("div");
+    const active = ev.id === currentEventId ? "【開いています】" : "";
+    const modeText = ev.judgeMode === "flag" ? "旗判定制" : "点数制";
+    title.innerHTML = `<b>${ev.name}</b> ${active}<br><span class="notice">${ev.category || "カテゴリー未設定"} / ${modeText} / 審判${ev.judgeCount}人 / 選手${ev.players.length}名</span>`;
+
+    const btnBox = document.createElement("div");
+    btnBox.className = "flex";
+    btnBox.style.marginTop = "7px";
+
+    const openBtn = document.createElement("button");
+    openBtn.type = "button";
+    openBtn.className = "small";
+    openBtn.textContent = "開く";
+    openBtn.addEventListener("click", () => openTournament(ev.id));
+
+    const delBtn = document.createElement("button");
+    delBtn.type = "button";
+    delBtn.className = "small danger";
+    delBtn.textContent = "削除";
+    delBtn.addEventListener("click", () => deleteTournament(ev.id));
+
+    const copyBtn = document.createElement("button");
+    copyBtn.type = "button";
+    copyBtn.className = "small secondary";
+    copyBtn.textContent = "複製";
+    copyBtn.addEventListener("click", () => duplicateTournament(ev.id));
+
+    btnBox.appendChild(openBtn);
+    btnBox.appendChild(copyBtn);
+    btnBox.appendChild(delBtn);
+    item.appendChild(title);
+    item.appendChild(btnBox);
+    box.appendChild(item);
+  });
+}
+
+function renderRanking(){
+  const body = $("rankingBody");
+  const rows = getRanking();
+  const ev = currentEvent();
+  body.innerHTML = "";
+
+  if(rows.length === 0){
+    body.innerHTML = '<tr><td colspan="5">選手または対戦が登録されていません。</td></tr>';
+    return;
+  }
+
+  if(ev && ev.judgeMode === "flag"){
+    rows.forEach(r => {
+      const tr = document.createElement("tr");
+
+      const rankTd = document.createElement("td");
+      rankTd.textContent = "試合" + (r.matchIndex + 1);
+
+      const noTd = document.createElement("td");
+      noTd.textContent = "-";
+
+      const nameTd = document.createElement("td");
+      const red = getPlayerLabelById(ev, r.match.redPlayerId);
+      const blue = getPlayerLabelById(ev, r.match.bluePlayerId);
+      nameTd.textContent = "赤：" + red + " / 青：" + blue;
+
+      const teamTd = document.createElement("td");
+      teamTd.textContent = "-";
+
+      const resultTd = document.createElement("td");
+      const b = document.createElement("b");
+
+      if(r.winner === "red"){
+        b.textContent = "赤 " + r.red + "-" + r.blue;
+        b.style.color = "#dc2626";
+      }else if(r.winner === "blue"){
+        b.textContent = "青 " + r.blue + "-" + r.red;
+        b.style.color = "#1E3A5F";
+      }else{
+        b.textContent = "-";
+      }
+
+      resultTd.appendChild(b);
+      tr.appendChild(rankTd);
+      tr.appendChild(noTd);
+      tr.appendChild(nameTd);
+      tr.appendChild(teamTd);
+      tr.appendChild(resultTd);
+
+      tr.addEventListener("click", () => {
+        openMatch(r.matchIndex);
+        const scoreTab = document.querySelector('.tab-btn[data-view="scoreView"]');
+        showView("scoreView", scoreTab);
+      });
+
+      body.appendChild(tr);
+    });
+
+    return;
+  }
+
+  rows.forEach(r => {
+    const tr = document.createElement("tr");
+
+    const rankTd = document.createElement("td");
+    rankTd.textContent = r.rank;
+
+    const noTd = document.createElement("td");
+    noTd.textContent = r.player.no;
+
+    const nameTd = document.createElement("td");
+    const nameSpan = document.createElement("span");
+    nameSpan.className = "name-link";
+    nameSpan.textContent = r.player.name;
+    nameSpan.addEventListener("click", () => showDetail(r.player.id));
+    nameTd.appendChild(nameSpan);
+
+    const teamTd = document.createElement("td");
+    teamTd.textContent = r.player.team || "-";
+
+    const totalTd = document.createElement("td");
+    const b = document.createElement("b");
+    b.textContent = r.total.toFixed(1);
+    totalTd.appendChild(b);
+
+    tr.appendChild(rankTd);
+    tr.appendChild(noTd);
+    tr.appendChild(nameTd);
+    tr.appendChild(teamTd);
+    tr.appendChild(totalTd);
+
+    body.appendChild(tr);
+  });
+}
+
+function showDetail(id){
+  const ev = currentEvent();
+  const p = ev.players.find(x => x.id === id);
+  if(!p) return;
+
+  detailPlayerId = id;
+  const c = calcScore(p, ev);
+
+  $("detailCard").style.display = "block";
+  $("detailContent").innerHTML = `
+    <p><b>No.</b> ${p.no}</p>
+    <p><b>氏名</b> ${p.name}</p>
+    <p><b>所属名</b> ${p.team || "-"}</p>
+    <p><b>審判ごとの点数</b><br>
+      ${p.scores.slice(0, ev.judgeCount).map((s,i) => `審判${i + 1}：${formatScore(s)}`).join("<br>")}
+    </p>
+    <p><b>最高得点</b> ${formatScore(c.max)}</p>
+    <p><b>最低得点</b> ${formatScore(c.min)}</p>
+    <p><b>採用点</b> ${c.used.length ? c.used.map(formatScore).join(" / ") : "-"}</p>
+    <p><b>合計点</b> <span style="color:#dc2626;font-size:28px;font-weight:bold;">${c.total.toFixed(1)}</span></p>
+  `;
+
+  $("detailCard").scrollIntoView({behavior:"smooth"});
+}
+
+function goScoreFromDetail(){
+  const ev = currentEvent();
+  const idx = ev.players.findIndex(p => p.id === detailPlayerId);
+
+  if(idx >= 0){
+    currentPlayerIndex = idx;
+    activeJudgeIndex = 0;
+    renderScoreInput();
+
+    const scoreTab = document.querySelector('.tab-btn[data-view="scoreView"]');
+    showView("scoreView", scoreTab);
+  }
+}
+</script>
+
+<div class="modal-backdrop" id="confirmModal">
+  <div class="modal-card">
+    <div class="modal-title">削除確認</div>
+    <div class="modal-message" id="confirmMessage">削除しますか？</div>
+    <div class="modal-actions">
+      <button type="button" class="gray" id="confirmCancelBtn">キャンセル</button>
+      <button type="button" class="danger" id="confirmOkBtn">削除する</button>
+    </div>
+  </div>
+</div>
+
+
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', function(){
+    navigator.serviceWorker.register('./service-worker.js').catch(function(err){
+      console.log('Service Worker registration failed:', err);
+    });
+  });
+}
+</script>
+</body>
+</html>
