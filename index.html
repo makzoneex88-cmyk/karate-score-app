@@ -8,7 +8,8 @@
 <title>空手・形 採点アプリ Ver3.0 PWA Navy</title>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#1E3A5F">
-<link rel="apple-touch-icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icon-512.png">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 
 <style>
 :root{
@@ -712,6 +713,7 @@ body.dark .theme-note{
 }
 
 </style>
+<!-- Ver3.0 PWA Navy fixed package / UTF-8 -->
 </head>
 
 <body>
@@ -2898,10 +2900,10 @@ function goScoreFromDetail(){
 
 
 <script>
-if ("serviceWorker" in navigator && (location.protocol === "https:" || location.hostname === "localhost" || location.hostname === "127.0.0.1")) {
-  window.addEventListener("load", () => {
-    navigator.serviceWorker.register("./service-worker.js").catch(err => {
-      console.log("Service Worker registration failed:", err);
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', function(){
+    navigator.serviceWorker.register('./service-worker.js').catch(function(err){
+      console.log('Service Worker registration failed:', err);
     });
   });
 }
