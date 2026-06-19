@@ -2,7 +2,7 @@
   "name": "空手・形採点アプリ",
   "short_name": "形採点",
   "description": "空手・形の採点・順位管理アプリ",
-  "start_url": "./index.html?v=301",
+  "start_url": "./index.html?v=302",
   "scope": "./",
   "display": "standalone",
   "orientation": "portrait",

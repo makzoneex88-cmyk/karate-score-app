@@ -1,4 +1,4 @@
-const CACHE_NAME = "kata-score-v3-0-1-offline-fixed";
+const CACHE_NAME = "kata-score-v3-0-2-teamselect-fixed";
 const APP_SHELL = [
   "./",
   "./index.html",
